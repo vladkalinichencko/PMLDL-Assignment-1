@@ -1,0 +1,1 @@
+{"feature_names": ["Pclass", "Sex", "Age", "Fare"], "target_names": ["Died", "Survived"], "model": "CatBoostClassifier", "dataset": "synthetic_titanic", "metrics": {"accuracy": 0.6275}}
