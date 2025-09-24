@@ -1,43 +1,38 @@
 import json
 from pathlib import Path
+from urllib.request import urlretrieve
 
 import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier
 
 
-def generate_data(n: int, seed: int = 42) -> pd.DataFrame:
-    rng = np.random.default_rng(seed)
+DATA_URL = "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
+DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "titanic.csv"
 
-    pclass = rng.integers(1, 4, size=n)
-    sex = rng.choice(["male", "female"], size=n)
 
-    age = np.clip(rng.normal(30, 14, size=n), 0, 80)
+def ensure_dataset() -> Path:
+    if not DATA_PATH.exists():
+        DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+        urlretrieve(DATA_URL, DATA_PATH)
+    return DATA_PATH
 
-    fare_base = 15 * (4 - pclass) ** 1.3
-    fare_noise = rng.normal(0, 8, size=n)
-    fare = np.clip(fare_base + fare_noise, 0, None)
 
-    logit = (
-        -1.0
-        + 1.1 * (sex == "female")
-        + 0.6 * (pclass == 1)
-        + 0.2 * (pclass == 2)
-        - 0.02 * (age - 30)
-        + 0.01 * (fare - 15)
-    )
-    prob = 1.0 / (1.0 + np.exp(-logit))
-    survived = rng.binomial(1, prob)
+def load_dataset() -> pd.DataFrame:
+    csv_path = ensure_dataset()
+    df = pd.read_csv(csv_path)
 
-    return pd.DataFrame(
-        {
-            "Pclass": pclass,
-            "Sex": sex,
-            "Age": age.round(1),
-            "Fare": fare.round(2),
-            "Survived": survived,
-        }
-    )
+    columns = ["Pclass", "Sex", "Age", "Fare", "Survived"]
+    df = df[columns]
+
+    df = df.dropna(subset=["Survived", "Pclass", "Sex"])
+    df["Age"] = df["Age"].fillna(df["Age"].median())
+    df["Fare"] = df["Fare"].fillna(df["Fare"].median())
+
+    df["Pclass"] = df["Pclass"].astype(int)
+    df["Sex"] = df["Sex"].astype(str).str.strip().str.lower()
+
+    return df
 
 
 def train_model(df: pd.DataFrame, seed: int = 42) -> tuple[CatBoostClassifier, float]:
@@ -83,7 +78,7 @@ def save_artifacts(model: CatBoostClassifier, acc: float) -> None:
         "feature_names": ["Pclass", "Sex", "Age", "Fare"],
         "target_names": ["Died", "Survived"],
         "model": "CatBoostClassifier",
-        "dataset": "synthetic_titanic",
+        "dataset": "titanic_real",
         "metrics": {"accuracy": acc},
     }
 
@@ -94,7 +89,7 @@ def save_artifacts(model: CatBoostClassifier, acc: float) -> None:
 
 
 def main() -> None:
-    df = generate_data(n=2000, seed=42)
+    df = load_dataset()
     model, acc = train_model(df, seed=42)
     save_artifacts(model, acc)
 

@@ -6,13 +6,6 @@ import streamlit as st
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 
-@st.cache_data(show_spinner=False)
-def fetch_schema():
-    r = requests.get(f"{API_URL}/schema", timeout=10)
-    r.raise_for_status()
-    return r.json()
-
-
 def render_form():
     col1, col2 = st.columns(2)
 
@@ -35,23 +28,12 @@ def call_predict(payload):
 
 def main():
     st.set_page_config(page_title="Titanic Survival", page_icon="🚢")
-    st.title("🚢🚢🚢 Will You Survive The Titanic? 🚢🚢🚢")
-
-    try:
-        _ = fetch_schema()
-    except Exception as e:
-        st.error(f"API error at {API_URL}: {e}")
-        st.stop()
+    st.title("🚢🚢🚢🚢🚢🚢🚢🚢🚢🚢🚢🚢🚢🚢🚢 Will You Survive The Titanic? 🚢🚢🚢🚢🚢🚢🚢🚢🚢🚢🚢🚢🚢🚢🚢")
 
     features = render_form()
 
     if st.button("Predict Survival", type="primary"):
-        try:
-            data = call_predict(features)
-        except Exception as e:
-            st.error(f"Prediction failed: {e}")
-            st.stop()
-
+        data = call_predict(features)
         pred = int(data.get("prediction", 0))
         prob = float(data.get("probability", 0.0))
 
